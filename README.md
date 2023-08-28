@@ -10,6 +10,9 @@ back to my roots of what made me fall in love with coding to begin with:
 So this will be a fun distractor for me on weekends. Feel free to fork, follow
 along, or provide feedback if you like.
 
+This attempts to port the original C++ code based on the series of articles
+located here [Tiny Renderer Series](https://github.com/ssloy/tinyrenderer/wiki/Lesson-0:-getting-started)
+
 
 Thanks!
 
