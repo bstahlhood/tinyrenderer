@@ -6,7 +6,7 @@
 //  Mostly doing many iterations as brush strokes toward the end goal.
 //
 //  Currently on this step:
-//  https://github.com/ssloy/tinyrenderer/wiki/Lesson-1:-Bresenham’s-Line-Drawing-Algorithm#fourth-attempt-continued
+//  https://github.com/ssloy/tinyrenderer/wiki/Lesson-1:-Bresenham’s-Line-Drawing-Algorithm#timings-fifth-and-final-attempt
 //
 
 use softbuffer::{Context, Surface};
@@ -43,8 +43,8 @@ fn line(
     }
     let distance_x = x1 - x0;
     let distance_y = y1 - y0;
-    let distance_error = (distance_y as f64 / distance_x as f64).abs();
-    let mut error = 0.;
+    let distance_error = (distance_y).abs() * 2;
+    let mut error = 0;
     let mut y = y0;
     let mut x = x0;
     while x <= x1 {
@@ -55,10 +55,10 @@ fn line(
             buffer[y as usize * 2048 + x as usize] = color;
         }
         error += distance_error;
-        if error > 0.5 {
+        if error > distance_x {
             let error_diff = if y1 > y0 { 1 } else { -1 };
             y += error_diff;
-            error -= 1.;
+            error -= distance_x * 2;
         }
         x += 1;
     }
