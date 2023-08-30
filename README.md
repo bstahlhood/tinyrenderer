@@ -29,3 +29,8 @@ git clone git@github.com:bstahlhood/tinyrenderer.git
 cd tinyrenderer
 cargo run
 ```
+
+## What's Next?
+
+The weekend of September 1st, I will implement OBJ file reading and wireframe
+rendering.
