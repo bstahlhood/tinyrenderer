@@ -42,4 +42,4 @@ I am taking an interative approach to this, so to start most of the code will be
 
 ## What's Next?
 
-The weekend of September 8th, I will implement Triangle Rasterization.
+The weekend of August 2nd, 2024, I will implement Triangle Rasterization.
