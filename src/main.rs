@@ -11,10 +11,12 @@
 
 use softbuffer::{Context, Surface};
 use std::num::NonZeroU32;
+use std::rc::Rc;
 use winit::{
-    event::{Event, StartCause, WindowEvent},
+    event::{Event, KeyEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::{Window, WindowBuilder},
+    keyboard::{Key, NamedKey},
+    window::WindowBuilder,
 };
 
 //
@@ -27,10 +29,17 @@ fn line(
     mut x1: i32,
     mut y1: i32,
     buffer: &mut [u32],
+    stride: usize,
+    scale: i32,
     r: u32,
     g: u32,
     b: u32,
 ) {
+    x0 = x0 * scale;
+    y0 = y0 * scale;
+    x1 = x1 * scale;
+    y1 = y1 * scale;
+    let color = b | (g << 8) | (r << 16);
     let mut steep = false;
     if (x0 - x1).abs() < (y0 - y1).abs() {
         std::mem::swap(&mut x0, &mut y0);
@@ -48,11 +57,10 @@ fn line(
     let mut y = y0;
     let mut x = x0;
     while x <= x1 {
-        let color = b | (g << 8) | (r << 16);
         if steep {
-            buffer[x as usize * 2048 + y as usize] = color;
+            buffer[x as usize * stride + y as usize] = color;
         } else {
-            buffer[y as usize * 2048 + x as usize] = color;
+            buffer[y as usize * stride + x as usize] = color;
         }
         error += distance_error;
         if error > distance_x {
@@ -65,57 +73,191 @@ fn line(
 }
 
 fn main() {
-    let event_loop = EventLoop::new();
+    let event_loop = EventLoop::new().unwrap();
+    let window = Rc::new(
+        WindowBuilder::new()
+            .with_title("Tiny Renderer")
+            .with_inner_size(winit::dpi::LogicalSize::new(800.0 as u32, 800.0 as u32))
+            .build(&event_loop)
+            .unwrap(),
+    );
 
-    let mut surface: Option<Surface> = None;
-    let mut window: Option<Window> = None;
+    let context = Context::new(window.clone()).unwrap();
+    let mut surface = Surface::new(&context, window.clone()).unwrap();
 
-    event_loop.run(move |event, event_loop, control_flow| {
-        *control_flow = ControlFlow::Wait;
+    let african_head = tobj::load_obj("models/african_head.obj", &tobj::LoadOptions::default());
+    let (models, _) = african_head.expect("Failed to load OBJ file");
 
-        match event {
-            Event::RedrawRequested(window_id) if window_id == window.as_ref().unwrap().id() => {
-                let (width, height) = {
-                    let size = window.as_ref().unwrap().inner_size();
-                    (size.width, size.height)
-                };
-                surface
-                    .as_mut()
-                    .unwrap()
-                    .resize(
-                        NonZeroU32::new(width).unwrap(),
-                        NonZeroU32::new(height).unwrap(),
-                    )
-                    .unwrap();
+    let model = models.get(0).unwrap();
 
-                let mut buffer = surface.as_mut().unwrap().buffer_mut().unwrap();
+    // let event_loop = EventLoop::new();
 
-                line(13, 20, 80, 40, &mut buffer, 255, 255, 255);
-                line(20, 13, 40, 80, &mut buffer, 255, 0, 0);
-                line(80, 40, 13, 20, &mut buffer, 255, 0, 0);
+    // let mut surface: Option<Surface> = None;
+    // let mut window: Option<Window> = None;
 
-                buffer.present().unwrap();
+    event_loop
+        .run(move |event, elwt| {
+            elwt.set_control_flow(ControlFlow::Wait);
+
+            match event {
+                Event::WindowEvent {
+                    window_id,
+                    event: WindowEvent::RedrawRequested,
+                } if window_id == window.id() => {
+                    if let (Some(width), Some(height)) = {
+                        let size = window.inner_size();
+                        println!("Width {} Height {}", size.width, size.height);
+                        (NonZeroU32::new(size.width), NonZeroU32::new(size.height))
+                    } {
+                        surface.resize(width, height).unwrap();
+
+                        let mut buffer = surface.buffer_mut().unwrap();
+
+                        let scale = window.scale_factor() as u32;
+                        let stride = (window.inner_size().width) as usize;
+
+                        let logical_width = width.get() / scale;
+                        let logical_height = height.get() / scale;
+
+                        println!("Logical Width {} Height {}", logical_width, logical_height);
+
+                        let mesh = &model.mesh;
+
+                        for face in (0..mesh.indices.len()).step_by(3) {
+                            let vertices = &mesh.indices[face..face + 3];
+
+                            println!("{:?}", vertices);
+
+                            // for vertex in vertices {
+                            let (v0, v1, v2) = {
+                                let v0 = &mesh.positions
+                                    [(vertices[0] * 3) as usize..(vertices[0] * 3 + 3) as usize];
+                                let v1 = &mesh.positions
+                                    [(vertices[1] * 3) as usize..(vertices[1] * 3 + 3) as usize];
+                                let v2 = &mesh.positions
+                                    [(vertices[2] * 3) as usize..(vertices[2] * 3 + 3) as usize];
+                                (v0, v1, v2)
+                            };
+
+                            println!("Drawing line {:?} {:?} {:?}", v0, v1, v2);
+
+                            let half_width = (logical_width as f32) / 2.;
+                            let half_height = (logical_height as f32) / 2.;
+
+                            let x0 = (v0[0] + 1.) * half_width;
+                            let y0 = (v0[1] * -half_height) + half_height;
+                            let mut x1 = (v1[0] + 1.) * half_width;
+                            let mut y1 = (v1[1] * -half_height) + half_height;
+                            let mut x2 = (v2[0] + 1.) * half_width;
+                            let mut y2 = (v2[1] * -half_height) + half_height;
+
+                            if x1 > logical_width as f32 - 1. {
+                                x1 = logical_width as f32 - 1.;
+                            }
+
+                            if y1 > logical_height as f32 - 1. {
+                                y1 = logical_height as f32 - 1.;
+                            }
+
+                            if x2 > logical_width as f32 - 1. {
+                                x2 = logical_width as f32 - 1.;
+                            }
+
+                            if y2 > logical_height as f32 - 1. {
+                                y2 = logical_height as f32 - 1.;
+                            }
+
+                            println!("Drawing line {x0} {y0} {x1} {y1}");
+
+                            line(
+                                x0 as i32,
+                                y0 as i32,
+                                x1 as i32,
+                                y1 as i32,
+                                &mut buffer,
+                                stride,
+                                scale as i32,
+                                255,
+                                255,
+                                255,
+                            );
+                            line(
+                                x1 as i32,
+                                y1 as i32,
+                                x2 as i32,
+                                y2 as i32,
+                                &mut buffer,
+                                stride,
+                                scale as i32,
+                                255,
+                                255,
+                                255,
+                            );
+                            line(
+                                x2 as i32,
+                                y2 as i32,
+                                x0 as i32,
+                                y0 as i32,
+                                &mut buffer,
+                                stride,
+                                scale as i32,
+                                255,
+                                255,
+                                255,
+                            );
+                        }
+
+                        // line(13, 20, 80, 40, &mut buffer, stride, 255, 255, 255);
+                        // line(20, 13, 40, 80, &mut buffer, stride, 255, 0, 0);
+                        // line(80, 40, 13, 20, &mut buffer, stride, 255, 0, 0);
+                        // line(
+                        //     0,
+                        //     0,
+                        //     1023,
+                        //     767,
+                        //     &mut buffer,
+                        //     stride,
+                        //     scale as i32,
+                        //     255,
+                        //     0,
+                        //     0,
+                        // );
+
+                        buffer.present().unwrap();
+                    }
+                }
+                // Event::NewEvents(StartCause::Init) => {
+                //     window = Some(
+                //         WindowBuilder::new()
+                //             .with_title("Tiny Renderer")
+                //             .with_inner_size(winit::dpi::LogicalSize::new(1024.0, 768.0))
+                //             .build(&event_loop)
+                //             .unwrap(),
+                //     );
+                //     let context = unsafe { Context::new(window.as_ref().unwrap()) }.unwrap();
+                //     surface =
+                //         Some(unsafe { Surface::new(&context, &window.as_ref().unwrap()) }.unwrap());
+                // }
+                Event::WindowEvent {
+                    event:
+                        WindowEvent::CloseRequested
+                        | WindowEvent::KeyboardInput {
+                            event:
+                                KeyEvent {
+                                    logical_key: Key::Named(NamedKey::Escape),
+                                    ..
+                                },
+                            ..
+                        },
+                    window_id,
+                } if window_id == window.id() => {
+                    elwt.exit();
+                }
+                // Event::MainEventsCleared => {
+                //     window.as_ref().unwrap().request_redraw();
+                // }
+                _ => (),
             }
-            Event::NewEvents(StartCause::Init) => {
-                window = Some(
-                    WindowBuilder::new()
-                        .with_title("Tiny Renderer")
-                        .with_inner_size(winit::dpi::LogicalSize::new(1024.0, 768.0))
-                        .build(&event_loop)
-                        .unwrap(),
-                );
-                let context = unsafe { Context::new(window.as_ref().unwrap()) }.unwrap();
-                surface =
-                    Some(unsafe { Surface::new(&context, &window.as_ref().unwrap()) }.unwrap());
-            }
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                window_id,
-            } if window_id == window.as_ref().unwrap().id() => *control_flow = ControlFlow::Exit,
-            Event::MainEventsCleared => {
-                window.as_ref().unwrap().request_redraw();
-            }
-            _ => (),
-        }
-    });
+        })
+        .unwrap();
 }

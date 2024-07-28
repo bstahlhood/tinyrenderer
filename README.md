@@ -13,11 +13,7 @@ along, or provide feedback if you like.
 This attempts to port the original C++ code based on the series of articles
 located here [Tiny Renderer Series](https://github.com/ssloy/tinyrenderer/wiki/Lesson-0:-getting-started)
 
-
-Thanks!
-
-- Ben Stahlhood II
-
+Thanks for checking in on my fun project!
 
 ## Running locally
 
@@ -30,7 +26,20 @@ cd tinyrenderer
 cargo run
 ```
 
+## Things to note
+
+I am running htis on macOS. So my main focus is running on macOS. Even though I am using `winit` and in theory this should work on Windows and Linux, I have not tested it.
+
+I am taking an interative approach to this, so to start most of the code will be in `main.rs`. As I progress, I will break things out into Traits and modules.
+
+## What is completed so far?
+
+- [x] Window and simple frame buffer
+- [x] Line drawing using Bresenham's Line Drawing Algorithm
+- [ ] OBJ Model loading
+- [ ] Wireframe rendering using lines
+- [ ] Triangle Rasterization
+
 ## What's Next?
 
-The weekend of September 1st, I will implement OBJ file reading and wireframe
-rendering.
+The weekend of September 8th, I will implement Triangle Rasterization.
