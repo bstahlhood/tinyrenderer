@@ -17,7 +17,7 @@ Thanks for checking in on my fun project!
 
 ## Running locally
 
-This is built using `winit` and `softbuffer` and should run on all compatible machines. I am currently running macOS Sonoma public beta and Rust version `1.70`
+This is built using `winit` and `softbuffer` and should run on all compatible machines. I am currently running macOS Sonoma and Rust version `1.80`
 
 
 ```bash
@@ -28,9 +28,9 @@ cargo run
 
 ## Things to note
 
-I am running htis on macOS. So my main focus is running on macOS. Even though I am using `winit` and in theory this should work on Windows and Linux, I have not tested it.
+My main focus is running on macOS, will address other OSes later. Maybe.
 
-I am taking an interative approach to this, so to start most of the code will be in `main.rs`. As I progress, I will break things out into Traits and modules.
+I am taking an iterative approach to this, so to start most of the code will be in `main.rs`. As I progress, I will break things out into Traits and modules.
 
 ## What is completed so far?
 
