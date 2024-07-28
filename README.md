@@ -36,8 +36,8 @@ I am taking an interative approach to this, so to start most of the code will be
 
 - [x] Window and simple frame buffer
 - [x] Line drawing using Bresenham's Line Drawing Algorithm
-- [ ] OBJ Model loading
-- [ ] Wireframe rendering using lines
+- [x] OBJ Model loading
+- [x] Wireframe rendering using lines
 - [ ] Triangle Rasterization
 
 ## What's Next?
